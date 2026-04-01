@@ -29,14 +29,9 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [userDataLoaded, setUserDataLoaded] = useState(false);
 
-  // Initialize DevTools Protection
+  // Initialize DevTools Protection - INSTANT (no delay)
   useEffect(() => {
-    // Wait a bit for user to load, then enable protection
-    const timer = setTimeout(() => {
-      initDevToolsProtection();
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    initDevToolsProtection();
   }, []);
 
   // Listen for auth state changes

@@ -1,8 +1,13 @@
-// 🔒 DevTools Protection - Tagada Level
+// 🔒 DevTools Protection - ULTRA TAGADA Level
+// Instant activation - No delay
 // Blocks inspect element, console, and data theft attempts
 // Admin email is whitelisted
 
 const ADMIN_EMAIL = 'adityaghoghari01@gmail.com';
+
+// Immediate check on script load
+let isDevToolsOpen = false;
+let checkInterval = null;
 
 // Check if user is admin
 const isAdmin = () => {
@@ -13,6 +18,29 @@ const isAdmin = () => {
     return false;
   }
 };
+
+// INSTANT DevTools detection - runs immediately
+const instantDevToolsCheck = () => {
+  if (isAdmin()) return;
+  
+  const threshold = 160;
+  const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+  const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+  const devtoolsOpen = widthThreshold || heightThreshold;
+  
+  if (devtoolsOpen && !isDevToolsOpen) {
+    isDevToolsOpen = true;
+    showWarning();
+  }
+};
+
+// Run check immediately on load
+if (typeof window !== 'undefined') {
+  instantDevToolsCheck();
+  
+  // Check every 100ms for ultra-fast detection
+  setInterval(instantDevToolsCheck, 100);
+}
 
 // Detect DevTools
 const detectDevTools = () => {
@@ -74,15 +102,14 @@ export const detectConsole = () => {
   }, 1000);
 };
 
-// Monitor DevTools
+// Monitor DevTools - Ultra aggressive
 export const monitorDevTools = () => {
-  if (isAdmin()) return; // Admin ko allow karo
+  if (isAdmin()) return;
   
-  setInterval(() => {
-    if (detectDevTools()) {
-      showWarning();
-    }
-  }, 1000);
+  // Check every 100ms instead of 1 second
+  checkInterval = setInterval(() => {
+    instantDevToolsCheck();
+  }, 100);
 };
 
 // Show warning and block page
@@ -219,29 +246,33 @@ export const preventCopy = () => {
   });
 };
 
-// Detect debugger
+// Detect debugger - More aggressive
 export const detectDebugger = () => {
-  if (isAdmin()) return; // Admin ko allow karo
+  if (isAdmin()) return;
   
+  // Check every 100ms
   setInterval(() => {
     const start = performance.now();
-    debugger; // This will pause if DevTools is open
+    debugger;
     const end = performance.now();
     
     if (end - start > 100) {
       showWarning();
     }
-  }, 1000);
+  }, 100);
 };
 
-// Initialize all protections
+// Initialize all protections - INSTANT
 export const initDevToolsProtection = () => {
   if (isAdmin()) {
     console.log('🔓 Admin detected - DevTools protection disabled');
     return;
   }
   
-  console.log('🔒 DevTools protection enabled');
+  console.log('🔒 ULTRA DevTools protection enabled');
+  
+  // Immediate check
+  instantDevToolsCheck();
   
   // Enable all protections
   blockRightClick();
@@ -252,10 +283,12 @@ export const initDevToolsProtection = () => {
   preventCopy();
   detectDebugger();
   
-  // Clear console periodically
+  // Clear console every 50ms (more aggressive)
   setInterval(() => {
-    console.clear();
-  }, 100);
+    if (!isAdmin()) {
+      console.clear();
+    }
+  }, 50);
   
   // Show warning message in console
   console.log('%c⚠️ WARNING ⚠️', 'color: red; font-size: 50px; font-weight: bold;');

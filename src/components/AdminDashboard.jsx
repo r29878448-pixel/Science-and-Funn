@@ -588,7 +588,7 @@ const APITab = ({ apiUrl, setApiUrl, onSave }) => (
             type="url"
             value={apiUrl}
             onChange={(e) => setApiUrl(e.target.value)}
-            placeholder="https://apiserver-skpg.onrender.com"
+            placeholder="Enter API Base URL (e.g., https://your-api.com)"
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-600 focus:border-transparent"
           />
         </div>

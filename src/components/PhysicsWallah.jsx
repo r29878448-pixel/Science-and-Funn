@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
-const PW_BASE = 'https://apiserver-6hat.onrender.com';
+// NOTE: This component is NOT used in Science and Fun app
+// Science and Fun uses ScienceAndFun.jsx which uses apiService.js
+// This file is kept for reference only
+
+const PW_BASE = ''; // Removed hardcoded URL - configure via Admin Panel
 
 const GRADIENTS = [
   'from-violet-500 to-purple-700', 'from-blue-500 to-cyan-600',

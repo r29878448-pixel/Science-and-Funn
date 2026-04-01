@@ -1,0 +1,501 @@
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { 
+  getCurrentApiUrl, 
+  getBatches,
+  fetchAllBatchContent,
+  getVideoDetails,
+  buildVideoUrl,
+  getLiveClasses,
+  getPreviousLiveClasses
+} from '../../src/services/apiService';
+import FolderCard from '../../src/components/FolderCard';
+import VideoCard from '../../src/components/VideoCard';
+import PdfCard from '../../src/components/PdfCard';
+import { LiveClassCard, UpcomingClassCard, PreviousLiveCard } from '../../src/components/LiveClassCard';
+
+const BatchDetailPage = () => {
+  const router = useRouter();
+  const { batchId } = router.query;
+  
+  const [batch, setBatch] = useState(null);
+  const [content, setContent] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('content');
+  const [currentFolder, setCurrentFolder] = useState(null);
+  const [breadcrumbs, setBreadcrumbs] = useState([]);
+  const [loadingVideo, setLoadingVideo] = useState(null);
+  
+  // Live & Upcoming states
+  const [liveSubTab, setLiveSubTab] = useState('live'); // 'live' or 'previous'
+  const [liveClasses, setLiveClasses] = useState([]);
+  const [upcomingClasses, setUpcomingClasses] = useState([]);
+  const [previousLiveClasses, setPreviousLiveClasses] = useState([]);
+  const [loadingLive, setLoadingLive] = useState(false);
+
+  useEffect(() => {
+    if (batchId) {
+      loadBatchData();
+    }
+  }, [batchId]);
+
+  const loadBatchData = async () => {
+    try {
+      setLoading(true);
+      
+      const apiUrl = getCurrentApiUrl();
+      if (!apiUrl) {
+        setMessage('❌ API not configured');
+        setLoading(false);
+        return;
+      }
+
+      // Get batch info
+      const batchesResponse = await getBatches();
+      const batches = batchesResponse.data || batchesResponse || [];
+      const foundBatch = batches.find(b => String(b.id) === String(batchId));
+      
+      if (!foundBatch) {
+        setMessage('❌ Batch not found');
+        setLoading(false);
+        return;
+      }
+      
+      setBatch(foundBatch);
+      
+      // Load content
+      console.log('🔄 Loading content for batch:', batchId);
+      const batchContent = await fetchAllBatchContent(batchId);
+      console.log('✅ Loaded content:', batchContent);
+      console.log('📊 Content length:', batchContent.length);
+      console.log('📁 Content items:', batchContent.map(item => ({
+        id: item.id,
+        title: item.Title || item.title,
+        type: item.material_type,
+        parent_id: item.parent_id
+      })));
+      
+      setContent(batchContent);
+      
+    } catch (error) {
+      console.error('❌ Error loading batch:', error);
+      setMessage('❌ ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVideoClick = async (video) => {
+    // Navigate to internal player page
+    router.push(`/player?course_id=${batchId}&video_id=${video.id}`);
+  };
+
+  const handleFolderClick = (folder) => {
+    console.log('📂 Opening folder:', folder);
+    setBreadcrumbs([...breadcrumbs, { id: folder.id, title: folder.Title || folder.title }]);
+    setCurrentFolder(folder.id);
+  };
+
+  const handleBreadcrumbClick = (index) => {
+    if (index === -1) {
+      setBreadcrumbs([]);
+      setCurrentFolder(null);
+    } else {
+      const newBreadcrumbs = breadcrumbs.slice(0, index + 1);
+      setBreadcrumbs(newBreadcrumbs);
+      setCurrentFolder(newBreadcrumbs[newBreadcrumbs.length - 1].id);
+    }
+  };
+
+  const handlePdfClick = (pdf) => {
+    const pdfUrl = pdf.file_link || pdf.pdf_link || pdf.download_link;
+    if (pdfUrl) {
+      window.open(pdfUrl, '_blank');
+    } else {
+      setMessage('❌ PDF link not available');
+    }
+  };
+
+  // Load live and upcoming classes (lazy load when tab is clicked)
+  const loadLiveClasses = async () => {
+    if (liveClasses.length > 0 || upcomingClasses.length > 0) {
+      return; // Already loaded
+    }
+
+    try {
+      setLoadingLive(true);
+      console.log('🔴 Loading live classes for batch:', batchId);
+      
+      const response = await getLiveClasses(batchId);
+      console.log('✅ Live classes response:', response);
+      
+      const live = response.live || response.data?.live || [];
+      const upcoming = response.upcoming || response.data?.upcoming || [];
+      
+      setLiveClasses(live);
+      setUpcomingClasses(upcoming);
+      
+      console.log(`📊 Live: ${live.length}, Upcoming: ${upcoming.length}`);
+    } catch (error) {
+      console.error('❌ Error loading live classes:', error);
+      setMessage('❌ Failed to load live classes');
+    } finally {
+      setLoadingLive(false);
+    }
+  };
+
+  // Load previous live classes
+  const loadPreviousLiveClasses = async () => {
+    if (previousLiveClasses.length > 0) {
+      return; // Already loaded
+    }
+
+    try {
+      setLoadingLive(true);
+      console.log('📹 Loading previous live classes for batch:', batchId);
+      
+      const response = await getPreviousLiveClasses(batchId);
+      console.log('✅ Previous live response:', response);
+      
+      const previous = response.data || response || [];
+      setPreviousLiveClasses(previous);
+      
+      console.log(`📊 Previous live: ${previous.length}`);
+    } catch (error) {
+      console.error('❌ Error loading previous live:', error);
+      setMessage('❌ Failed to load previous live classes');
+    } finally {
+      setLoadingLive(false);
+    }
+  };
+
+  // Handle tab change
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'live') {
+      loadLiveClasses();
+    }
+  };
+
+  // Handle live sub-tab change
+  const handleLiveSubTabChange = (subTab) => {
+    setLiveSubTab(subTab);
+    if (subTab === 'previous') {
+      loadPreviousLiveClasses();
+    }
+  };
+
+  // Handle live class watch
+  const handleLiveWatch = (liveClass) => {
+    const videoId = liveClass.id || liveClass.video_id;
+    // Navigate to internal player with isLive flag
+    router.push(`/player?course_id=${batchId}&video_id=${videoId}&isLive=true`);
+  };
+
+  // Handle previous live watch
+  const handlePreviousLiveWatch = (previousClass) => {
+    // Navigate to internal player page
+    router.push(`/player?course_id=${batchId}&video_id=${previousClass.id}`);
+  };
+
+  // Get current content based on folder
+  const getCurrentContent = () => {
+    if (!content || content.length === 0) {
+      console.log('⚠️ No content available');
+      return [];
+    }
+
+    if (!currentFolder) {
+      // Root level - show items that don't have a parent in the content list
+      const rootItems = content.filter(item => {
+        const hasParentInList = content.some(p => 
+          p.material_type === 'FOLDER' && String(p.id) === String(item.parent_id)
+        );
+        return !hasParentInList;
+      });
+      console.log('📂 Root items:', rootItems.length);
+      return rootItems;
+    }
+    
+    // Inside folder - show items with matching parent_id
+    const folderItems = content.filter(item => 
+      String(item.parent_id) === String(currentFolder)
+    );
+    console.log(`📂 Folder ${currentFolder} items:`, folderItems.length);
+    return folderItems;
+  };
+
+  const currentContent = getCurrentContent();
+  const folders = currentContent.filter(item => item.material_type === 'FOLDER');
+  const videos = currentContent.filter(item => item.material_type === 'VIDEO');
+  const pdfs = currentContent.filter(item => item.material_type === 'PDF');
+
+  console.log('📊 Current view:', {
+    currentFolder,
+    totalContent: content.length,
+    currentContent: currentContent.length,
+    folders: folders.length,
+    videos: videos.length,
+    pdfs: pdfs.length
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-black mx-auto mb-4"></div>
+          <p className="text-gray-700">Loading content...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {/* Title */}
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            {batch?.course_name || batch?.name || 'Course Content'}
+          </h1>
+          
+          {/* Tabs */}
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleTabChange('content')}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition ${
+                activeTab === 'content'
+                  ? 'bg-black text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Content
+            </button>
+            <button
+              onClick={() => handleTabChange('live')}
+              className={`px-6 py-2 rounded-full text-sm font-medium transition ${
+                activeTab === 'live'
+                  ? 'bg-black text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Live & Upcoming
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {activeTab === 'content' && (
+          <>
+            {/* Breadcrumbs */}
+            {breadcrumbs.length > 0 && (
+              <div className="mb-6 flex items-center text-sm text-gray-600">
+                <button 
+                  onClick={() => handleBreadcrumbClick(-1)} 
+                  className="hover:text-black font-medium"
+                >
+                  Home
+                </button>
+                {breadcrumbs.map((crumb, index) => (
+                  <React.Fragment key={crumb.id}>
+                    <span className="mx-2 text-gray-400">&gt;</span>
+                    <button 
+                      onClick={() => handleBreadcrumbClick(index)}
+                      className="hover:text-black font-medium"
+                    >
+                      {crumb.title}
+                    </button>
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+
+            {/* Message */}
+            {message && (
+              <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                <p className="text-yellow-800">{message}</p>
+              </div>
+            )}
+
+            {/* Folders Grid */}
+            {folders.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Folders</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {folders.map(folder => (
+                    <FolderCard 
+                      key={folder.id}
+                      folder={folder}
+                      onClick={() => handleFolderClick(folder)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Videos Grid */}
+            {videos.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Videos</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {videos.map(video => (
+                    <VideoCard 
+                      key={video.id}
+                      video={video}
+                      onWatch={handleVideoClick}
+                      loading={loadingVideo === video.id}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* PDFs Grid */}
+            {pdfs.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">E-Books</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pdfs.map(pdf => (
+                    <PdfCard 
+                      key={pdf.id}
+                      pdf={pdf}
+                      onClick={() => handlePdfClick(pdf)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Content Message */}
+            {folders.length === 0 && videos.length === 0 && pdfs.length === 0 && (
+              <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+                <div className="text-6xl mb-4">📭</div>
+                <p className="text-gray-500 text-lg mb-2">No content available</p>
+                <p className="text-gray-400 text-sm">
+                  {content.length === 0 
+                    ? 'This batch has no content yet' 
+                    : 'This folder is empty'}
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'live' && (
+          <>
+            {/* Live Sub-Tabs */}
+            <div className="mb-6 flex space-x-2">
+              <button
+                onClick={() => handleLiveSubTabChange('live')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  liveSubTab === 'live'
+                    ? 'bg-black text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                Live & Upcoming
+              </button>
+              <button
+                onClick={() => handleLiveSubTabChange('previous')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  liveSubTab === 'previous'
+                    ? 'bg-black text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                Previous Live Videos
+              </button>
+            </div>
+
+            {loadingLive ? (
+              <div className="text-center py-16">
+                <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-black mx-auto mb-4"></div>
+                <p className="text-gray-700">Loading...</p>
+              </div>
+            ) : (
+              <>
+                {liveSubTab === 'live' && (
+                  <>
+                    {/* Live Classes */}
+                    {liveClasses.length > 0 && (
+                      <div className="mb-8">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <span className="w-3 h-3 bg-red-600 rounded-full mr-2 animate-pulse"></span>
+                          Live Now
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {liveClasses.map(liveClass => (
+                            <LiveClassCard 
+                              key={liveClass.id}
+                              liveClass={liveClass}
+                              onWatch={handleLiveWatch}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upcoming Classes */}
+                    {upcomingClasses.length > 0 && (
+                      <div className="mb-8">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Classes</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {upcomingClasses.map(upcomingClass => (
+                            <UpcomingClassCard 
+                              key={upcomingClass.id}
+                              upcomingClass={upcomingClass}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* No Live/Upcoming */}
+                    {liveClasses.length === 0 && upcomingClasses.length === 0 && (
+                      <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+                        <div className="text-6xl mb-4">📅</div>
+                        <p className="text-gray-500 text-lg">No live or upcoming classes</p>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {liveSubTab === 'previous' && (
+                  <>
+                    {/* Previous Live Classes */}
+                    {previousLiveClasses.length > 0 ? (
+                      <div className="mb-8">
+                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Previous Live Videos</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {previousLiveClasses.map(previousClass => (
+                            <PreviousLiveCard 
+                              key={previousClass.id}
+                              previousClass={previousClass}
+                              onWatch={handlePreviousLiveWatch}
+                              loading={loadingVideo === previousClass.id}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-16 bg-white rounded-lg shadow-sm">
+                        <div className="text-6xl mb-4">📹</div>
+                        <p className="text-gray-500 text-lg">No previous live videos</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default BatchDetailPage;

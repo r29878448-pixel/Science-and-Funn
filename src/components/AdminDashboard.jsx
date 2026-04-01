@@ -11,7 +11,7 @@ import {
   getSystemSettings,
   updateSystemSettings
 } from '../services/adminService';
-import { getCurrentApiUrl, setApiUrl } from '../services/apiService';
+import { getCurrentApiUrl, updateApiUrl } from '../services/apiService';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -116,8 +116,12 @@ const AdminDashboard = () => {
   };
 
   const handleSaveApiUrl = () => {
-    setApiUrl(apiUrl);
-    alert('API URL saved successfully!');
+    try {
+      updateApiUrl(apiUrl);
+      alert('API URL saved successfully!');
+    } catch (error) {
+      alert('Error saving API URL: ' + error.message);
+    }
   };
 
   const handleResetAllXP = async () => {

@@ -88,8 +88,34 @@ const BatchDetailPage = () => {
   };
 
   const handleVideoClick = async (video) => {
-    // Navigate to internal player page
-    router.push(`/player?course_id=${batchId}&video_id=${video.id}`);
+    try {
+      setLoadingVideo(video.id);
+      
+      // Get video details from API
+      const videoDetails = await getVideoDetails(video.id, batchId);
+      console.log('🎥 Video details:', videoDetails);
+      
+      // Extract video URL
+      const videoUrl = videoDetails.video_url || 
+                      videoDetails.url || 
+                      videoDetails.stream_url ||
+                      videoDetails.data?.video_url ||
+                      videoDetails.data?.url;
+      
+      if (videoUrl) {
+        console.log('✅ Opening video in new tab:', videoUrl);
+        // Open video URL directly in new tab
+        window.open(videoUrl, '_blank');
+      } else {
+        console.error('❌ No video URL found in response');
+        setMessage('❌ Video URL not available');
+      }
+    } catch (error) {
+      console.error('❌ Error loading video:', error);
+      setMessage('❌ Failed to load video');
+    } finally {
+      setLoadingVideo(null);
+    }
   };
 
   const handleFolderClick = (folder) => {
@@ -188,16 +214,69 @@ const BatchDetailPage = () => {
   };
 
   // Handle live class watch
-  const handleLiveWatch = (liveClass) => {
-    const videoId = liveClass.id || liveClass.video_id;
-    // Navigate to internal player with isLive flag
-    router.push(`/player?course_id=${batchId}&video_id=${videoId}&isLive=true`);
+  const handleLiveWatch = async (liveClass) => {
+    try {
+      setLoadingVideo(liveClass.id);
+      
+      const videoId = liveClass.id || liveClass.video_id;
+      
+      // Get video details from API
+      const videoDetails = await getVideoDetails(videoId, batchId);
+      console.log('🔴 Live video details:', videoDetails);
+      
+      // Extract video URL
+      const videoUrl = videoDetails.video_url || 
+                      videoDetails.url || 
+                      videoDetails.stream_url ||
+                      videoDetails.data?.video_url ||
+                      videoDetails.data?.url;
+      
+      if (videoUrl) {
+        console.log('✅ Opening live video in new tab:', videoUrl);
+        // Open video URL directly in new tab
+        window.open(videoUrl, '_blank');
+      } else {
+        console.error('❌ No video URL found');
+        setMessage('❌ Video URL not available');
+      }
+    } catch (error) {
+      console.error('❌ Error loading live video:', error);
+      setMessage('❌ Failed to load video');
+    } finally {
+      setLoadingVideo(null);
+    }
   };
 
   // Handle previous live watch
-  const handlePreviousLiveWatch = (previousClass) => {
-    // Navigate to internal player page
-    router.push(`/player?course_id=${batchId}&video_id=${previousClass.id}`);
+  const handlePreviousLiveWatch = async (previousClass) => {
+    try {
+      setLoadingVideo(previousClass.id);
+      
+      // Get video details from API
+      const videoDetails = await getVideoDetails(previousClass.id, batchId);
+      console.log('📹 Previous live video details:', videoDetails);
+      
+      // Extract video URL
+      const videoUrl = videoDetails.video_url || 
+                      videoDetails.url || 
+                      videoDetails.stream_url ||
+                      videoDetails.data?.video_url ||
+                      videoDetails.data?.url;
+      
+      if (videoUrl) {
+        console.log('✅ Opening previous live video in new tab:', videoUrl);
+        // Open video URL directly in new tab
+        window.open(videoUrl, '_blank');
+      } else {
+        console.error('❌ No video URL found');
+        setMessage('❌ Video URL not available');
+      }
+    } catch (error) {
+      console.error('❌ Error loading video:', error);
+      setMessage('❌ Failed to load video');
+    } finally {
+      setLoadingVideo(null);
+    }
   };
 
   // Get current content based on folder

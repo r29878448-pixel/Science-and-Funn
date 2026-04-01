@@ -47,7 +47,7 @@ const BatchDetailPage = () => {
       // Load API URL from Firebase
       const apiUrl = await getCurrentApiUrl();
       if (!apiUrl) {
-        setMessage('❌ Service temporarily unavailable');
+        setMessage('😔 Sorry! Server is temporarily down. Please try again later.');
         setLoading(false);
         return;
       }
@@ -81,7 +81,7 @@ const BatchDetailPage = () => {
       
     } catch (error) {
       console.error('❌ Error loading batch:', error);
-      setMessage('❌ ' + error.message);
+      setMessage('😔 Sorry! Server is temporarily down. Please try again later.');
     } finally {
       setLoading(false);
     }
@@ -108,7 +108,7 @@ const BatchDetailPage = () => {
         window.open(videoUrl, '_blank');
       } else {
         console.error('❌ No video URL found in response');
-        setMessage('❌ Video URL not available');
+        setMessage('😔 Sorry! Video not available. Please try again later.');
       }
     } catch (error) {
       console.error('❌ Error loading video:', error);
@@ -166,7 +166,7 @@ const BatchDetailPage = () => {
       console.log(`📊 Live: ${live.length}, Upcoming: ${upcoming.length}`);
     } catch (error) {
       console.error('❌ Error loading live classes:', error);
-      setMessage('❌ Failed to load live classes');
+      setMessage('😔 Sorry! Unable to load live classes. Please try again later.');
     } finally {
       setLoadingLive(false);
     }
@@ -191,7 +191,7 @@ const BatchDetailPage = () => {
       console.log(`📊 Previous live: ${previous.length}`);
     } catch (error) {
       console.error('❌ Error loading previous live:', error);
-      setMessage('❌ Failed to load previous live classes');
+      setMessage('😔 Sorry! Unable to load previous classes. Please try again later.');
     } finally {
       setLoadingLive(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { getCurrentApiUrl, getBatches } from '../services/apiService';
 import CourseCard from './CourseCard';
+import { CourseGridSkeleton } from './LoadingSkeleton';
 
 const ScienceAndFun = () => {
   const router = useRouter();
@@ -50,10 +51,15 @@ const ScienceAndFun = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-black mx-auto mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading courses...</p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="h-9 bg-gray-300 rounded w-48 animate-pulse"></div>
+          </div>
+          
+          {/* Fast Loading Skeleton */}
+          <CourseGridSkeleton count={8} />
         </div>
       </div>
     );

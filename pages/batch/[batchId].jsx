@@ -322,10 +322,31 @@ const BatchDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-black mx-auto mb-4"></div>
-          <p className="text-gray-700">Loading content...</p>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header Skeleton */}
+        <div className="bg-white border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="h-8 bg-gray-300 rounded w-64 mb-4 animate-pulse"></div>
+            <div className="flex space-x-2">
+              <div className="h-10 w-24 bg-gray-300 rounded-full animate-pulse"></div>
+              <div className="h-10 w-32 bg-gray-300 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Content Skeleton */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[1,2,3,4,5,6,7,8].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow-md overflow-hidden animate-pulse">
+                <div className="h-40 bg-gray-300"></div>
+                <div className="p-4">
+                  <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

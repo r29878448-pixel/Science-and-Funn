@@ -11,13 +11,25 @@ import { db } from '../firebase';
 // API Base URL - loaded from Firebase
 let BASE_URL = '';
 
-// Load API URL from Firebase (global config)
+// Load API URL from Firebase (global config) - with caching
+let apiUrlCache = null;
+let apiUrlCacheTime = 0;
+const API_URL_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const loadApiUrlFromFirebase = async () => {
   try {
+    // Return cached value if fresh
+    if (apiUrlCache && Date.now() - apiUrlCacheTime < API_URL_CACHE_DURATION) {
+      console.log('✅ API Base URL loaded from cache:', apiUrlCache);
+      return apiUrlCache;
+    }
+    
     const configDoc = await getDoc(doc(db, 'settings', 'apiConfig'));
     if (configDoc.exists()) {
       const data = configDoc.data();
       BASE_URL = data.baseUrl || '';
+      apiUrlCache = BASE_URL;
+      apiUrlCacheTime = Date.now();
       console.log('✅ API Base URL loaded from Firebase:', BASE_URL);
       return BASE_URL;
     } else {
@@ -26,7 +38,7 @@ const loadApiUrlFromFirebase = async () => {
     }
   } catch (error) {
     console.error('❌ Error loading API URL from Firebase:', error);
-    return '';
+    return apiUrlCache || ''; // Return cached value on error
   }
 };
 
@@ -64,11 +76,21 @@ export const updateApiUrl = async (newUrl) => {
   }
 };
 
-// Get current BASE_URL (reload from Firebase if empty)
+// Get current BASE_URL (with instant cache)
 export const getCurrentApiUrl = async () => {
-  if (!BASE_URL) {
-    BASE_URL = await loadApiUrlFromFirebase();
+  // Return immediately if already loaded
+  if (BASE_URL) {
+    return BASE_URL;
   }
+  
+  // Return cached value if available
+  if (apiUrlCache && Date.now() - apiUrlCacheTime < API_URL_CACHE_DURATION) {
+    BASE_URL = apiUrlCache;
+    return BASE_URL;
+  }
+  
+  // Load from Firebase
+  BASE_URL = await loadApiUrlFromFirebase();
   return BASE_URL;
 };
 
@@ -80,15 +102,15 @@ const validateBaseUrl = () => {
 };
 
 const apiClient = axios.create({
-  timeout: 15000, // Reduced to 15 seconds for faster failure
+  timeout: 10000, // Reduced to 10 seconds for faster failure
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Simple cache for API responses
+// Aggressive cache for API responses
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes (increased from 5)
 
 // Get from cache if available and not expired
 const getFromCache = (key) => {

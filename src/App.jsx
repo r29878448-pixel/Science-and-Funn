@@ -10,11 +10,13 @@ import ClassSelectionPopup from './components/ClassSelectionPopup';
 import TelegramPopup from './components/TelegramPopup';
 import { onAuthChange, getUserData, isAdmin } from './services/authService';
 import { updateLastActive } from './services/adminService';
+import { initDevToolsProtection, setCurrentUser } from './utils/devToolsProtection';
 
 // ============================================
 // FULLY API-DRIVEN APPLICATION
 // No Firebase for content, only for auth & XP
 // All course data from configurable API Base URL
+// DevTools Protection Enabled (Admin Whitelisted)
 // ============================================
 
 const App = () => {
@@ -27,6 +29,16 @@ const App = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [userDataLoaded, setUserDataLoaded] = useState(false);
 
+  // Initialize DevTools Protection
+  useEffect(() => {
+    // Wait a bit for user to load, then enable protection
+    const timer = setTimeout(() => {
+      initDevToolsProtection();
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Listen for auth state changes
   useEffect(() => {
     console.log('🔄 Setting up auth listener...');
@@ -34,6 +46,11 @@ const App = () => {
     const unsubscribe = onAuthChange(async (user) => {
       console.log('🔐 Auth state changed:', user ? user.email : 'Not logged in');
       setCurrentUser(user);
+      
+      // Store user for DevTools protection check
+      if (user) {
+        setCurrentUser(user);
+      }
       
       if (user) {
         console.log('👤 User logged in, fetching data...');

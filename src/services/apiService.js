@@ -122,7 +122,11 @@ const secureFetch = async (url, useCache = true) => {
     return response.data;
   } catch (error) {
     console.error('❌ API Request Failed:', error.message);
-    // Generic error - don't expose technical details
+    console.error('❌ Full error:', error.response?.data || error);
+    console.error('❌ Status:', error.response?.status);
+    console.error('❌ URL was:', url);
+    
+    // Generic error - don't expose technical details to users
     throw new Error('Unable to load content. Please try again later.');
   }
 };

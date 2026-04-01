@@ -14,17 +14,18 @@ const ScienceAndFun = () => {
   }, []);
 
   const loadBatches = async () => {
-    const apiUrl = getCurrentApiUrl();
-    
-    if (!apiUrl) {
-      setMessage('⚠️ API not configured. Please contact support.');
-      setLoading(false);
-      return;
-    }
-    
     setLoading(true);
     
     try {
+      // Load API URL from Firebase
+      const apiUrl = await getCurrentApiUrl();
+      
+      if (!apiUrl) {
+        setMessage('⚠️ Service temporarily unavailable. Please try again later or contact support.');
+        setLoading(false);
+        return;
+      }
+      
       const response = await getBatches();
       const apiBatches = response.data || response || [];
       

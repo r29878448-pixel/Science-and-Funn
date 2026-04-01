@@ -75,8 +75,8 @@ const AdminDashboard = () => {
         setSettings(settingsResult.data);
       }
 
-      // Load API URL
-      const currentApiUrl = getCurrentApiUrl();
+      // Load API URL from Firebase
+      const currentApiUrl = await getCurrentApiUrl();
       setApiUrlState(currentApiUrl || '');
     } catch (error) {
       console.error('Error loading data:', error);
@@ -115,10 +115,10 @@ const AdminDashboard = () => {
     setXpHistory(chartData);
   };
 
-  const handleSaveApiUrl = () => {
+  const handleSaveApiUrl = async () => {
     try {
-      updateApiUrl(apiUrl);
-      alert('API URL saved successfully!');
+      await updateApiUrl(apiUrl);
+      alert('API URL saved successfully! All users will now use this API.');
     } catch (error) {
       alert('Error saving API URL: ' + error.message);
     }

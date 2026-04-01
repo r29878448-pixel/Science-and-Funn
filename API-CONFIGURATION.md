@@ -1,7 +1,7 @@
 # 🔧 API Configuration Guide
 
 ## Overview
-Science and Fun is a **100% API-driven application**. All content is fetched from a configurable API Base URL that you set via the Admin Dashboard.
+Science and Fun is a **100% API-driven application**. All content is fetched from a configurable API Base URL that is set by the admin and **automatically available to all users**.
 
 ## ✅ How It Works
 
@@ -11,10 +11,11 @@ Science and Fun is a **100% API-driven application**. All content is fetched fro
 - Only accessible by: `adityaghoghari01@gmail.com`
 
 ### 2. Storage
-- API Base URL is stored in browser's `localStorage`
-- Key: `apiBaseUrl`
-- Persists across page refreshes
-- Each browser/device can have different API URL
+- API Base URL is stored in **Firebase Firestore**
+- Collection: `settings`
+- Document: `apiConfig`
+- **Available to ALL users automatically**
+- No per-user configuration needed
 
 ### 3. Usage Flow
 ```
@@ -22,13 +23,13 @@ Admin Panel
     ↓
 Set API Base URL
     ↓
-Saved to localStorage
+Saved to Firebase (Global)
     ↓
-apiService.js loads URL
+All users load from Firebase
     ↓
-All API calls use this URL
+apiService.js uses this URL
     ↓
-Content displayed dynamically
+Content displayed for everyone
 ```
 
 ## 🎯 Science and Fun Architecture

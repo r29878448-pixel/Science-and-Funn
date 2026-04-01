@@ -1,25 +1,42 @@
 import axios from 'axios';
 import { buildVideoUrl, normalizeUrl, appendQueryParam } from '../utils/urlUtils';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 // ============================================
-// STRICT API-ONLY ARCHITECTURE
-// NO Firebase, NO Static Data, NO Hardcoded URLs
+// CENTRALIZED API CONFIGURATION
+// API URL stored in Firebase for all users
 // ============================================
 
-// API Base URL - MUST be configured via admin panel
+// API Base URL - loaded from Firebase
 let BASE_URL = '';
 
-// Load from localStorage on initialization (browser only)
-if (typeof window !== 'undefined') {
-  const savedUrl = localStorage.getItem('apiBaseUrl');
-  if (savedUrl) {
-    BASE_URL = savedUrl;
-    console.log('✅ API Base URL loaded from localStorage:', BASE_URL);
+// Load API URL from Firebase (global config)
+const loadApiUrlFromFirebase = async () => {
+  try {
+    const configDoc = await getDoc(doc(db, 'settings', 'apiConfig'));
+    if (configDoc.exists()) {
+      const data = configDoc.data();
+      BASE_URL = data.baseUrl || '';
+      console.log('✅ API Base URL loaded from Firebase:', BASE_URL);
+      return BASE_URL;
+    } else {
+      console.warn('⚠️ No API config found in Firebase');
+      return '';
+    }
+  } catch (error) {
+    console.error('❌ Error loading API URL from Firebase:', error);
+    return '';
   }
+};
+
+// Initialize on module load (browser only)
+if (typeof window !== 'undefined') {
+  loadApiUrlFromFirebase();
 }
 
-// Update BASE_URL and persist to localStorage
-export const updateApiUrl = (newUrl) => {
+// Update BASE_URL and persist to Firebase (admin only)
+export const updateApiUrl = async (newUrl) => {
   if (!newUrl || typeof newUrl !== 'string') {
     throw new Error('Invalid API URL');
   }
@@ -33,16 +50,25 @@ export const updateApiUrl = (newUrl) => {
   
   BASE_URL = newUrl.trim();
   
-  // Persist to localStorage
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('apiBaseUrl', BASE_URL);
+  // Save to Firebase (global config for all users)
+  try {
+    await setDoc(doc(db, 'settings', 'apiConfig'), {
+      baseUrl: BASE_URL,
+      updatedAt: new Date().toISOString(),
+      updatedBy: 'admin'
+    });
+    console.log('✅ API Base URL saved to Firebase:', BASE_URL);
+  } catch (error) {
+    console.error('❌ Error saving API URL to Firebase:', error);
+    throw new Error('Failed to save API URL');
   }
-  
-  console.log('✅ API Base URL updated:', BASE_URL);
 };
 
-// Get current BASE_URL
-export const getCurrentApiUrl = () => {
+// Get current BASE_URL (reload from Firebase if empty)
+export const getCurrentApiUrl = async () => {
+  if (!BASE_URL) {
+    BASE_URL = await loadApiUrlFromFirebase();
+  }
   return BASE_URL;
 };
 

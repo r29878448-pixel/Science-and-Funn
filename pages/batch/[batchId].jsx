@@ -44,9 +44,10 @@ const BatchDetailPage = () => {
     try {
       setLoading(true);
       
-      const apiUrl = getCurrentApiUrl();
+      // Load API URL from Firebase
+      const apiUrl = await getCurrentApiUrl();
       if (!apiUrl) {
-        setMessage('❌ API not configured');
+        setMessage('❌ Service temporarily unavailable');
         setLoading(false);
         return;
       }

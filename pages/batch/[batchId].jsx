@@ -201,13 +201,13 @@ const BatchDetailPage = () => {
         console.log('✅ PDF link already decrypted');
       }
 
-      // Use proxy to avoid CORS and caching issues
-      const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(pdfLink)}`;
+      // Open PDF in ClassX viewer with decoded URL
+      const viewerUrl = `https://pdfweb.classx.co.in/pdfjs/web/viewer-new.html?file=${encodeURIComponent(pdfLink)}`;
       
-      console.log('📄 Opening PDF via proxy...');
+      console.log('📄 Opening PDF in ClassX viewer...');
       
-      // Open PDF in new tab
-      window.open(proxyUrl, '_blank');
+      // Open in new tab
+      window.open(viewerUrl, '_blank');
       
     } catch (error) {
       console.error('❌ Error opening PDF:', error);

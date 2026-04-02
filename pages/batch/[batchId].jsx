@@ -636,6 +636,7 @@ const BatchDetailPage = () => {
                       key={video.id}
                       video={video}
                       onWatch={handleVideoClick}
+                      onPdfClick={handlePdfClick}
                       loading={loadingVideo === video.id}
                     />
                   ))}

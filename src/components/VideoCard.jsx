@@ -1,8 +1,8 @@
 import React from 'react';
 
 // Exact replica of screenshot video cards
-const VideoCard = ({ video, onWatch, loading }) => {
-  // Format date and time - "Created on: 04 Apr 2026, 05:00 PM"
+const VideoCard = ({ video, onWatch, onPdfClick, loading }) => {
+  // Format date and time - "Created on: 16 Feb 2026, 12:00 PM"
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
     
@@ -10,17 +10,17 @@ const VideoCard = ({ video, onWatch, loading }) => {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return null;
       
-      const dateStr = date.toLocaleDateString('en-GB', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      });
-      const timeStr = date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      });
-      return `Created on: ${dateStr}, ${timeStr}`;
+      const day = String(date.getDate()).padStart(2, '0');
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const month = monthNames[date.getMonth()];
+      const year = date.getFullYear();
+      
+      const hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const displayHours = hours % 12 || 12;
+      
+      return `Created on: ${day} ${month} ${year}, ${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
     } catch (e) {
       return null;
     }
@@ -32,6 +32,28 @@ const VideoCard = ({ video, onWatch, loading }) => {
     video.startTime || 
     video.scheduled_at
   );
+
+  // Format duration - "56 mins 21 secs"
+  const formatDuration = (seconds) => {
+    if (!seconds) return null;
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    
+    if (mins > 0 && secs > 0) {
+      return `${mins} mins ${secs} secs`;
+    } else if (mins > 0) {
+      return `${mins} mins`;
+    } else {
+      return `${secs} secs`;
+    }
+  };
+
+  const durationStr = formatDuration(video.duration || video.video_duration);
+
+  // Check if video has attachments/PDFs
+  const hasAttachments = video.attachments && video.attachments.length > 0;
+  const hasPdfLink = video.pdf_link || video.file_link || video.attachment_link;
 
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -74,18 +96,18 @@ const VideoCard = ({ video, onWatch, loading }) => {
 
         {/* Date and Time */}
         {dateTimeStr && (
-          <div className="mb-3 text-xs text-gray-600">
+          <div className="mb-2 text-xs text-gray-600">
             {dateTimeStr}
           </div>
         )}
 
         {/* Duration if available */}
-        {video.duration && (
+        {durationStr && (
           <div className="flex items-center text-xs text-gray-500 mb-3">
             <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {video.duration}
+            {durationStr}
           </div>
         )}
 
@@ -100,9 +122,12 @@ const VideoCard = ({ video, onWatch, loading }) => {
             {loading ? 'Loading...' : 'Watch'}
           </button>
 
-          {/* View PDF Button (if available) */}
-          {video.has_pdf && (
-            <button className="w-full bg-white hover:bg-gray-50 text-black text-sm font-medium py-2 px-4 rounded border border-gray-300 transition-colors">
+          {/* View PDF Button (if attachments available) */}
+          {(hasAttachments || hasPdfLink) && onPdfClick && (
+            <button 
+              onClick={() => onPdfClick(video)}
+              className="w-full bg-white hover:bg-gray-50 text-black text-sm font-medium py-2 px-4 rounded border border-gray-300 transition-colors"
+            >
               View PDF
             </button>
           )}

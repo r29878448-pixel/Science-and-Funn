@@ -178,19 +178,10 @@ const BatchDetailPage = () => {
       }
 
       // Link is encrypted, need to decrypt via API
-      console.log('🔐 PDF link is encrypted, fetching decrypted URL from API');
+      console.log('🔐 PDF link is encrypted, decrypting...');
       
-      // Get API URL
-      const apiUrl = await getCurrentApiUrl();
-      if (!apiUrl) {
-        setMessage('😔 Sorry! Server is temporarily down. Please try again later.');
-        setLoadingVideo(null);
-        return;
-      }
-
-      // Call API to get decrypted PDF URL
-      // Assuming API endpoint: /api/scienceandfun/pdf-decrypt
-      const response = await fetch(`${apiUrl}/api/scienceandfun/pdf-decrypt`, {
+      // Call local Next.js API to decrypt
+      const response = await fetch('/api/pdf-decrypt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -206,16 +197,15 @@ const BatchDetailPage = () => {
       }
 
       const data = await response.json();
-      const decryptedUrl = data.decrypted_url || data.url || data.pdf_url;
-
-      if (!decryptedUrl) {
-        throw new Error('No decrypted URL received');
+      
+      if (!data.success || !data.decrypted_url) {
+        throw new Error(data.message || 'No decrypted URL received');
       }
 
       console.log('✅ PDF decrypted successfully, opening...');
       
       // Open decrypted PDF in new tab
-      window.open(decryptedUrl, '_blank');
+      window.open(data.decrypted_url, '_blank');
       
     } catch (error) {
       console.error('❌ Error opening PDF:', error);

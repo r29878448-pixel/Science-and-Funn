@@ -2,6 +2,22 @@ import React from 'react';
 
 // Exact replica of screenshot video cards
 const VideoCard = ({ video, onWatch, onPdfClick, loading }) => {
+  // Debug: Log video data to see what fields are available
+  React.useEffect(() => {
+    console.log('📹 Video data:', {
+      id: video.id,
+      title: video.Title || video.title,
+      created_at: video.created_at,
+      createdAt: video.createdAt,
+      start_time: video.start_time,
+      date: video.date,
+      duration: video.duration,
+      video_duration: video.video_duration,
+      length: video.length,
+      allFields: Object.keys(video)
+    });
+  }, [video]);
+
   // Format date and time - "Created on: 16 Feb 2026, 12:00 PM"
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
@@ -26,30 +42,70 @@ const VideoCard = ({ video, onWatch, onPdfClick, loading }) => {
     }
   };
 
+  // Try all possible date field names
   const dateTimeStr = formatDateTime(
     video.created_at || 
+    video.createdAt ||
     video.start_time || 
     video.startTime || 
-    video.scheduled_at
+    video.scheduled_at ||
+    video.scheduledAt ||
+    video.date ||
+    video.timestamp ||
+    video.upload_date ||
+    video.uploadDate
   );
 
   // Format duration - "56 mins 21 secs"
-  const formatDuration = (seconds) => {
-    if (!seconds) return null;
+  const formatDuration = (durationValue) => {
+    if (!durationValue) return null;
     
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    let seconds = 0;
     
-    if (mins > 0 && secs > 0) {
-      return `${mins} mins ${secs} secs`;
+    // If duration is a string like "1:30:45" or "30:45"
+    if (typeof durationValue === 'string') {
+      const parts = durationValue.split(':').map(Number);
+      if (parts.length === 3) {
+        // HH:MM:SS
+        seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      } else if (parts.length === 2) {
+        // MM:SS
+        seconds = parts[0] * 60 + parts[1];
+      } else if (parts.length === 1) {
+        // Just seconds
+        seconds = parts[0];
+      }
+    } else if (typeof durationValue === 'number') {
+      // If duration is already in seconds
+      seconds = durationValue;
+    }
+    
+    if (!seconds || seconds <= 0) return null;
+    
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+    
+    if (hours > 0) {
+      return `${hours} hr ${mins} mins ${secs} secs`;
     } else if (mins > 0) {
-      return `${mins} mins`;
+      return `${mins} mins ${secs} secs`;
     } else {
       return `${secs} secs`;
     }
   };
 
-  const durationStr = formatDuration(video.duration || video.video_duration);
+  // Try all possible duration field names
+  const durationStr = formatDuration(
+    video.duration || 
+    video.video_duration || 
+    video.videoDuration ||
+    video.length ||
+    video.video_length ||
+    video.videoLength ||
+    video.time ||
+    video.runtime
+  );
 
   // Check if video has attachments/PDFs
   const hasAttachments = video.attachments && video.attachments.length > 0;

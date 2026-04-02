@@ -162,64 +162,101 @@ const BatchDetailPage = () => {
   const handlePdfClick = async (pdf) => {
     try {
       setLoadingVideo(pdf.id); // Reuse loading state
+      setMessage(''); // Clear previous messages
       
-      console.log('📄 Opening PDF:', pdf.id);
+      console.log('📄 Opening PDF - Full object:', JSON.stringify(pdf, null, 2));
       
-      // Check if file_link exists
-      let pdfLink = pdf.file_link || pdf.pdf_link || pdf.download_link;
+      // Try all possible PDF link field names
+      let pdfLink = pdf.file_link || 
+                    pdf.pdf_link || 
+                    pdf.download_link || 
+                    pdf.attachment_link ||
+                    pdf.url ||
+                    pdf.link ||
+                    pdf.file_url ||
+                    pdf.pdf_url;
+      
+      console.log('📄 Found PDF link:', pdfLink);
       
       if (!pdfLink) {
-        setMessage('😔 Sorry! PDF link not available.');
+        console.error('❌ No PDF link found. Available fields:', Object.keys(pdf));
+        setMessage('😔 Sorry! PDF link not available in content.');
         setLoadingVideo(null);
         return;
       }
 
+      console.log('📄 Original PDF link:', pdfLink);
+      console.log('📄 Link starts with http?', pdfLink.startsWith('http'));
+
       // If link is encrypted (not starting with http), decrypt it first
       if (!pdfLink.startsWith('http')) {
         console.log('🔐 PDF link is encrypted, decrypting...');
+        console.log('🔐 Encrypted link length:', pdfLink.length);
         
-        // Call local Next.js API to decrypt
-        const response = await fetch('/api/pdf-decrypt', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            encrypted_link: pdfLink,
-            pdf_id: pdf.id
-          })
-        });
+        try {
+          // Call local Next.js API to decrypt
+          const response = await fetch('/api/pdf-decrypt', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              encrypted_link: pdfLink,
+              pdf_id: pdf.id
+            })
+          });
 
-        if (!response.ok) {
-          throw new Error('Failed to decrypt PDF link');
+          console.log('🔐 Decrypt response status:', response.status);
+          const responseText = await response.text();
+          console.log('🔐 Decrypt response text:', responseText);
+
+          if (!response.ok) {
+            console.error('❌ Decrypt API error response:', responseText);
+            throw new Error(`Decryption failed: ${response.status}`);
+          }
+
+          const data = JSON.parse(responseText);
+          console.log('✅ Decrypt response data:', data);
+          
+          if (!data.success || !data.decrypted_url) {
+            throw new Error(data.message || 'No decrypted URL received');
+          }
+
+          pdfLink = data.decrypted_url;
+          console.log('✅ PDF decrypted successfully:', pdfLink);
+        } catch (decryptError) {
+          console.error('❌ Decryption failed:', decryptError);
+          console.error('❌ Decryption error stack:', decryptError.stack);
+          throw new Error(`Decryption failed: ${decryptError.message}`);
         }
-
-        const data = await response.json();
-        
-        if (!data.success || !data.decrypted_url) {
-          throw new Error(data.message || 'No decrypted URL received');
-        }
-
-        pdfLink = data.decrypted_url;
-        console.log('✅ PDF decrypted successfully');
       } else {
-        console.log('✅ PDF link already decrypted');
+        console.log('✅ PDF link already decrypted (starts with http)');
+      }
+
+      // Validate final URL
+      if (!pdfLink.startsWith('http')) {
+        throw new Error('Invalid PDF URL after decryption');
       }
 
       // Open PDF in modal with ClassX viewer
       const viewerUrl = `https://pdfweb.classx.co.in/pdfjs/web/viewer-new.html?file=${encodeURIComponent(pdfLink)}`;
       
+      console.log('📄 Final viewer URL:', viewerUrl);
       console.log('📄 Opening PDF in modal...');
       
       // Set PDF modal state
       setCurrentPdfUrl(viewerUrl);
       setCurrentPdfTitle(pdf.Title || pdf.title || 'E-Book');
       setPdfModalOpen(true);
+      setLoadingVideo(null);
+      
+      console.log('✅ PDF modal opened successfully');
       
     } catch (error) {
       console.error('❌ Error opening PDF:', error);
-      setMessage('😔 Sorry! Unable to open PDF. Please try again later.');
-    } finally {
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+      setMessage(`😔 Sorry! Unable to open PDF. ${error.message}`);
       setLoadingVideo(null);
     }
   };

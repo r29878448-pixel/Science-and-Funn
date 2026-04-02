@@ -91,28 +91,47 @@ const BatchDetailPage = () => {
     try {
       setLoadingVideo(video.id);
       
+      console.log('🎥 Fetching video details for:', video.id);
+      
       // Get video details from API
       const videoDetails = await getVideoDetails(video.id, batchId);
-      console.log('🎥 Video details:', videoDetails);
+      console.log('✅ Video details response:', videoDetails);
       
-      // Extract video URL
-      const videoUrl = videoDetails.video_url || 
-                      videoDetails.url || 
-                      videoDetails.stream_url ||
-                      videoDetails.data?.video_url ||
-                      videoDetails.data?.url;
+      // Extract video URL and token from response
+      const data = videoDetails.data || videoDetails;
+      const videoUrl = data.video_url || 
+                      data.url || 
+                      data.stream_url ||
+                      data.video_player_url ||
+                      data.player_url;
       
-      if (videoUrl) {
-        console.log('✅ Opening video in new tab:', videoUrl);
-        // Open video URL directly in new tab
-        window.open(videoUrl, '_blank');
-      } else {
-        console.error('❌ No video URL found in response');
+      const token = data.video_player_token || 
+                   data.token || 
+                   data.video_token ||
+                   data.access_token;
+      
+      if (!videoUrl) {
+        console.error('❌ No video URL found in response:', data);
         setMessage('😔 Sorry! Video not available. Please try again later.');
+        setLoadingVideo(null);
+        return;
       }
+      
+      // Build final URL with token if available
+      let finalUrl = videoUrl;
+      if (token) {
+        console.log('🔑 Adding token to video URL');
+        finalUrl = buildVideoUrl(videoUrl, token);
+      }
+      
+      console.log('✅ Opening video URL:', finalUrl);
+      
+      // Open video in new tab
+      window.open(finalUrl, '_blank');
+      
     } catch (error) {
       console.error('❌ Error loading video:', error);
-      setMessage('❌ Failed to load video');
+      setMessage('😔 Sorry! Video not available. Please try again later.');
     } finally {
       setLoadingVideo(null);
     }
@@ -220,28 +239,47 @@ const BatchDetailPage = () => {
       
       const videoId = liveClass.id || liveClass.video_id;
       
+      console.log('🔴 Fetching live video details for:', videoId);
+      
       // Get video details from API
       const videoDetails = await getVideoDetails(videoId, batchId);
-      console.log('🔴 Live video details:', videoDetails);
+      console.log('✅ Live video details response:', videoDetails);
       
-      // Extract video URL
-      const videoUrl = videoDetails.video_url || 
-                      videoDetails.url || 
-                      videoDetails.stream_url ||
-                      videoDetails.data?.video_url ||
-                      videoDetails.data?.url;
+      // Extract video URL and token
+      const data = videoDetails.data || videoDetails;
+      const videoUrl = data.video_url || 
+                      data.url || 
+                      data.stream_url ||
+                      data.video_player_url ||
+                      data.player_url;
       
-      if (videoUrl) {
-        console.log('✅ Opening live video in new tab:', videoUrl);
-        // Open video URL directly in new tab
-        window.open(videoUrl, '_blank');
-      } else {
-        console.error('❌ No video URL found');
-        setMessage('❌ Video URL not available');
+      const token = data.video_player_token || 
+                   data.token || 
+                   data.video_token ||
+                   data.access_token;
+      
+      if (!videoUrl) {
+        console.error('❌ No video URL found in response:', data);
+        setMessage('😔 Sorry! Video not available. Please try again later.');
+        setLoadingVideo(null);
+        return;
       }
+      
+      // Build final URL with token if available
+      let finalUrl = videoUrl;
+      if (token) {
+        console.log('🔑 Adding token to live video URL');
+        finalUrl = buildVideoUrl(videoUrl, token);
+      }
+      
+      console.log('✅ Opening live video URL:', finalUrl);
+      
+      // Open video in new tab
+      window.open(finalUrl, '_blank');
+      
     } catch (error) {
       console.error('❌ Error loading live video:', error);
-      setMessage('❌ Failed to load video');
+      setMessage('😔 Sorry! Video not available. Please try again later.');
     } finally {
       setLoadingVideo(null);
     }
@@ -252,28 +290,47 @@ const BatchDetailPage = () => {
     try {
       setLoadingVideo(previousClass.id);
       
+      console.log('📹 Fetching previous live video details for:', previousClass.id);
+      
       // Get video details from API
       const videoDetails = await getVideoDetails(previousClass.id, batchId);
-      console.log('📹 Previous live video details:', videoDetails);
+      console.log('✅ Previous live video details response:', videoDetails);
       
-      // Extract video URL
-      const videoUrl = videoDetails.video_url || 
-                      videoDetails.url || 
-                      videoDetails.stream_url ||
-                      videoDetails.data?.video_url ||
-                      videoDetails.data?.url;
+      // Extract video URL and token
+      const data = videoDetails.data || videoDetails;
+      const videoUrl = data.video_url || 
+                      data.url || 
+                      data.stream_url ||
+                      data.video_player_url ||
+                      data.player_url;
       
-      if (videoUrl) {
-        console.log('✅ Opening previous live video in new tab:', videoUrl);
-        // Open video URL directly in new tab
-        window.open(videoUrl, '_blank');
-      } else {
-        console.error('❌ No video URL found');
-        setMessage('❌ Video URL not available');
+      const token = data.video_player_token || 
+                   data.token || 
+                   data.video_token ||
+                   data.access_token;
+      
+      if (!videoUrl) {
+        console.error('❌ No video URL found in response:', data);
+        setMessage('😔 Sorry! Video not available. Please try again later.');
+        setLoadingVideo(null);
+        return;
       }
+      
+      // Build final URL with token if available
+      let finalUrl = videoUrl;
+      if (token) {
+        console.log('🔑 Adding token to previous live video URL');
+        finalUrl = buildVideoUrl(videoUrl, token);
+      }
+      
+      console.log('✅ Opening previous live video URL:', finalUrl);
+      
+      // Open video in new tab
+      window.open(finalUrl, '_blank');
+      
     } catch (error) {
       console.error('❌ Error loading video:', error);
-      setMessage('❌ Failed to load video');
+      setMessage('😔 Sorry! Video not available. Please try again later.');
     } finally {
       setLoadingVideo(null);
     }

@@ -9,11 +9,24 @@ const ADMIN_EMAIL = 'adityaghoghari01@gmail.com';
 let isDevToolsOpen = false;
 let checkInterval = null;
 
-// Check if user is admin
+// Check if user is admin - Multiple methods
 const isAdmin = () => {
   try {
+    // Method 1: Check localStorage currentUser
     const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-    return user.email === ADMIN_EMAIL;
+    if (user.email === ADMIN_EMAIL) return true;
+    
+    // Method 2: Check if on admin page
+    if (window.location.pathname.includes('admin')) return true;
+    
+    // Method 3: Check URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true') return true;
+    
+    // Method 4: Check sessionStorage
+    if (sessionStorage.getItem('isAdmin') === 'true') return true;
+    
+    return false;
   } catch {
     return false;
   }
@@ -302,3 +315,23 @@ export const setCurrentUser = (user) => {
     localStorage.setItem('currentUser', JSON.stringify(user));
   }
 };
+
+// Enable admin mode manually (for debugging)
+export const enableAdminMode = () => {
+  sessionStorage.setItem('isAdmin', 'true');
+  console.log('✅ Admin mode enabled! Refresh page to disable DevTools protection.');
+  location.reload();
+};
+
+// Disable admin mode
+export const disableAdminMode = () => {
+  sessionStorage.removeItem('isAdmin');
+  console.log('❌ Admin mode disabled! DevTools protection will be enabled.');
+  location.reload();
+};
+
+// Make functions available globally for easy access
+if (typeof window !== 'undefined') {
+  window.enableAdminMode = enableAdminMode;
+  window.disableAdminMode = disableAdminMode;
+}

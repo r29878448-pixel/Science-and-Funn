@@ -19,8 +19,20 @@ function decrypt(encryptedText) {
       throw new Error('No encrypted text provided');
     }
 
+    console.log('🔐 Decrypting text:', encryptedText.substring(0, 50) + '...');
+    console.log('🔐 Text length:', encryptedText.length);
+
+    // Handle different formats
+    // Format 1: "base64string:something" - take only base64 part
+    let base64String = encryptedText;
+    if (encryptedText.includes(':')) {
+      base64String = encryptedText.split(':')[0];
+      console.log('🔐 Extracted base64 from colon format');
+    }
+
     // Decode base64
-    const encryptedBuffer = Buffer.from(encryptedText, 'base64');
+    const encryptedBuffer = Buffer.from(base64String, 'base64');
+    console.log('🔐 Encrypted buffer length:', encryptedBuffer.length);
 
     // Create decipher
     const decipher = crypto.createDecipheriv(ALGORITHM, AES_KEY, AES_IV);
@@ -29,10 +41,14 @@ function decrypt(encryptedText) {
     let decrypted = decipher.update(encryptedBuffer);
     decrypted = Buffer.concat([decrypted, decipher.final()]);
 
-    return decrypted.toString('utf8');
+    const result = decrypted.toString('utf8');
+    console.log('✅ Decrypted successfully:', result.substring(0, 50) + '...');
+    
+    return result;
   } catch (error) {
-    console.error('Decryption error:', error.message);
-    throw new Error('Failed to decrypt content');
+    console.error('❌ Decryption error:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    throw new Error(`Failed to decrypt: ${error.message}`);
   }
 }
 
@@ -60,14 +76,18 @@ export default async function handler(req, res) {
   try {
     const { encrypted_link, pdf_id } = req.body;
 
+    console.log('📄 PDF Decrypt Request:', {
+      pdf_id,
+      encrypted_link_length: encrypted_link?.length,
+      encrypted_link_preview: encrypted_link?.substring(0, 50)
+    });
+
     if (!encrypted_link) {
       return res.status(400).json({
         success: false,
         message: 'Encrypted link is required'
       });
     }
-
-    console.log('🔐 Decrypting PDF:', pdf_id);
 
     // Check if already decrypted (starts with http)
     if (encrypted_link.startsWith('http')) {
@@ -84,7 +104,8 @@ export default async function handler(req, res) {
 
     // Validate decrypted URL
     if (!isValidUrl(decryptedUrl)) {
-      throw new Error('Invalid decrypted URL');
+      console.error('❌ Invalid decrypted URL:', decryptedUrl);
+      throw new Error('Decrypted content is not a valid URL');
     }
 
     console.log('✅ PDF decrypted successfully');
@@ -98,11 +119,13 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('❌ PDF decryption error:', error.message);
+    console.error('❌ Error stack:', error.stack);
     
     return res.status(500).json({
       success: false,
       message: 'Failed to decrypt PDF link',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 }

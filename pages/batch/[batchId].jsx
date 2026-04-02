@@ -154,12 +154,74 @@ const BatchDetailPage = () => {
     }
   };
 
-  const handlePdfClick = (pdf) => {
-    const pdfUrl = pdf.file_link || pdf.pdf_link || pdf.download_link;
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
-    } else {
-      setMessage('❌ PDF link not available');
+  const handlePdfClick = async (pdf) => {
+    try {
+      setLoadingVideo(pdf.id); // Reuse loading state
+      
+      console.log('📄 Opening PDF:', pdf.id);
+      
+      // Check if file_link exists
+      const encryptedLink = pdf.file_link || pdf.pdf_link || pdf.download_link;
+      
+      if (!encryptedLink) {
+        setMessage('😔 Sorry! PDF link not available.');
+        setLoadingVideo(null);
+        return;
+      }
+
+      // Check if link is already decrypted (starts with http)
+      if (encryptedLink.startsWith('http')) {
+        console.log('✅ PDF link already decrypted, opening directly');
+        window.open(encryptedLink, '_blank');
+        setLoadingVideo(null);
+        return;
+      }
+
+      // Link is encrypted, need to decrypt via API
+      console.log('🔐 PDF link is encrypted, fetching decrypted URL from API');
+      
+      // Get API URL
+      const apiUrl = await getCurrentApiUrl();
+      if (!apiUrl) {
+        setMessage('😔 Sorry! Server is temporarily down. Please try again later.');
+        setLoadingVideo(null);
+        return;
+      }
+
+      // Call API to get decrypted PDF URL
+      // Assuming API endpoint: /api/scienceandfun/pdf-decrypt
+      const response = await fetch(`${apiUrl}/api/scienceandfun/pdf-decrypt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          encrypted_link: encryptedLink,
+          pdf_id: pdf.id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to decrypt PDF link');
+      }
+
+      const data = await response.json();
+      const decryptedUrl = data.decrypted_url || data.url || data.pdf_url;
+
+      if (!decryptedUrl) {
+        throw new Error('No decrypted URL received');
+      }
+
+      console.log('✅ PDF decrypted successfully, opening...');
+      
+      // Open decrypted PDF in new tab
+      window.open(decryptedUrl, '_blank');
+      
+    } catch (error) {
+      console.error('❌ Error opening PDF:', error);
+      setMessage('😔 Sorry! Unable to open PDF. Please try again later.');
+    } finally {
+      setLoadingVideo(null);
     }
   };
 

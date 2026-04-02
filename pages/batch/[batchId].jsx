@@ -27,6 +27,11 @@ const BatchDetailPage = () => {
   const [breadcrumbs, setBreadcrumbs] = useState([]);
   const [loadingVideo, setLoadingVideo] = useState(null);
   
+  // PDF Modal states
+  const [pdfModalOpen, setPdfModalOpen] = useState(false);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState('');
+  const [currentPdfTitle, setCurrentPdfTitle] = useState('');
+  
   // Live & Upcoming states
   const [liveSubTab, setLiveSubTab] = useState('live'); // 'live' or 'previous'
   const [liveClasses, setLiveClasses] = useState([]);
@@ -201,13 +206,15 @@ const BatchDetailPage = () => {
         console.log('✅ PDF link already decrypted');
       }
 
-      // Open PDF in ClassX viewer with decoded URL
+      // Open PDF in modal with ClassX viewer
       const viewerUrl = `https://pdfweb.classx.co.in/pdfjs/web/viewer-new.html?file=${encodeURIComponent(pdfLink)}`;
       
-      console.log('📄 Opening PDF in ClassX viewer...');
+      console.log('📄 Opening PDF in modal...');
       
-      // Open in new tab
-      window.open(viewerUrl, '_blank');
+      // Set PDF modal state
+      setCurrentPdfUrl(viewerUrl);
+      setCurrentPdfTitle(pdf.Title || pdf.title || 'E-Book');
+      setPdfModalOpen(true);
       
     } catch (error) {
       console.error('❌ Error opening PDF:', error);
@@ -465,6 +472,39 @@ const BatchDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* PDF Modal */}
+      {pdfModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75">
+          <div className="relative w-full h-full max-w-7xl mx-auto p-2 sm:p-4">
+            {/* Modal Header */}
+            <div className="bg-white rounded-t-lg px-4 py-3 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900 truncate">
+                {currentPdfTitle}
+              </h3>
+              <button
+                onClick={() => {
+                  setPdfModalOpen(false);
+                  setCurrentPdfUrl('');
+                  setCurrentPdfTitle('');
+                }}
+                className="text-gray-500 hover:text-gray-700 text-2xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+            
+            {/* PDF Viewer */}
+            <div className="bg-white rounded-b-lg overflow-hidden" style={{ height: 'calc(100vh - 80px)' }}>
+              <iframe
+                src={currentPdfUrl}
+                className="w-full h-full border-0"
+                title={currentPdfTitle}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

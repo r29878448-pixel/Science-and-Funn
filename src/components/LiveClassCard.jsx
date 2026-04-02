@@ -88,35 +88,69 @@ export const LiveClassCard = ({ liveClass, onWatch }) => {
 
 // Upcoming Class Card with countdown
 export const UpcomingClassCard = ({ upcomingClass }) => {
-  // Format date and time - "Created on: 04 Apr 2026, 05:00 PM"
-  const formatDateTime = (dateString) => {
+  const [countdown, setCountdown] = useState('');
+
+  // Calculate countdown
+  useEffect(() => {
+    const calculateCountdown = () => {
+      const startTime = upcomingClass.start_time || 
+                       upcomingClass.startTime || 
+                       upcomingClass.scheduled_at;
+      
+      if (!startTime) return;
+
+      const targetDate = new Date(startTime);
+      if (isNaN(targetDate.getTime())) return;
+
+      const now = new Date();
+      const diff = targetDate - now;
+
+      if (diff <= 0) {
+        setCountdown('Starting soon...');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown(`${days}d ${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    calculateCountdown();
+    const interval = setInterval(calculateCountdown, 1000);
+
+    return () => clearInterval(interval);
+  }, [upcomingClass]);
+
+  // Format "Live on: 04-04-2026 at 05:00 pm"
+  const formatLiveDateTime = (dateString) => {
     if (!dateString) return null;
     
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return null;
       
-      const dateStr = date.toLocaleDateString('en-GB', { 
-        day: '2-digit', 
-        month: 'short', 
-        year: 'numeric' 
-      });
-      const timeStr = date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-      });
-      return `Created on: ${dateStr}, ${timeStr}`;
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      
+      const hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      const displayHours = hours % 12 || 12;
+      
+      return `Live on: ${day}-${month}-${year} at ${String(displayHours).padStart(2, '0')}:${minutes} ${ampm}`;
     } catch (e) {
       return null;
     }
   };
 
-  const dateTimeStr = formatDateTime(
+  const liveDateTime = formatLiveDateTime(
     upcomingClass.start_time || 
     upcomingClass.startTime || 
-    upcomingClass.scheduled_at ||
-    upcomingClass.created_at
+    upcomingClass.scheduled_at
   );
 
   return (
@@ -152,17 +186,26 @@ export const UpcomingClassCard = ({ upcomingClass }) => {
           {upcomingClass.title || upcomingClass.Title || upcomingClass.name}
         </h3>
 
-        {/* Date and Time */}
-        {dateTimeStr && (
-          <div className="mb-3 text-xs text-gray-600">
-            {dateTimeStr}
+        {/* Live Date and Time */}
+        {liveDateTime && (
+          <div className="mb-2 text-xs text-gray-700 font-medium">
+            {liveDateTime}
           </div>
         )}
 
-        {/* Upcoming Badge */}
-        <div className="bg-blue-50 text-blue-700 text-sm font-medium py-2 px-3 rounded text-center">
-          Upcoming
-        </div>
+        {/* Countdown Timer */}
+        {countdown && (
+          <div className="bg-blue-50 text-blue-700 text-sm font-bold py-2 px-3 rounded text-center mb-2">
+            Starts in: {countdown}
+          </div>
+        )}
+
+        {/* Upcoming Badge (fallback if no countdown) */}
+        {!countdown && (
+          <div className="bg-blue-50 text-blue-700 text-sm font-medium py-2 px-3 rounded text-center">
+            Upcoming
+          </div>
+        )}
       </div>
     </div>
   );

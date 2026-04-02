@@ -2,6 +2,37 @@ import React from 'react';
 
 // Exact replica of screenshot video cards
 const VideoCard = ({ video, onWatch, loading }) => {
+  // Format date and time - "Created on: 04 Apr 2026, 05:00 PM"
+  const formatDateTime = (dateString) => {
+    if (!dateString) return null;
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return null;
+      
+      const dateStr = date.toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric' 
+      });
+      const timeStr = date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      return `Created on: ${dateStr}, ${timeStr}`;
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const dateTimeStr = formatDateTime(
+    video.created_at || 
+    video.start_time || 
+    video.startTime || 
+    video.scheduled_at
+  );
+
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
       {/* Thumbnail - Top */}
@@ -41,20 +72,22 @@ const VideoCard = ({ video, onWatch, loading }) => {
           {video.Title || video.title || video.name}
         </h3>
 
-        {/* Meta Info */}
-        <div className="flex items-center text-xs text-gray-500 mb-3 space-x-3">
-          {video.created_at && (
-            <span>{new Date(video.created_at).toLocaleDateString()}</span>
-          )}
-          {video.duration && (
-            <span className="flex items-center">
-              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {video.duration}
-            </span>
-          )}
-        </div>
+        {/* Date and Time */}
+        {dateTimeStr && (
+          <div className="mb-3 text-xs text-gray-600">
+            {dateTimeStr}
+          </div>
+        )}
+
+        {/* Duration if available */}
+        {video.duration && (
+          <div className="flex items-center text-xs text-gray-500 mb-3">
+            <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {video.duration}
+          </div>
+        )}
 
         {/* Buttons */}
         <div className="space-y-2">

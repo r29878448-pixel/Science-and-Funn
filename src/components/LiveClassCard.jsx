@@ -2,29 +2,31 @@ import React, { useState, useEffect } from 'react';
 
 // Live Class Card with blinking LIVE badge
 export const LiveClassCard = ({ liveClass, onWatch }) => {
-  // Format date and time
+  // Format date and time - "Created on: 04 Apr 2026, 05:00 PM"
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
     
     try {
       const date = new Date(dateString);
-      const dateStr = date.toLocaleDateString('en-IN', { 
+      if (isNaN(date.getTime())) return null;
+      
+      const dateStr = date.toLocaleDateString('en-GB', { 
         day: '2-digit', 
         month: 'short', 
         year: 'numeric' 
       });
-      const timeStr = date.toLocaleTimeString('en-IN', { 
+      const timeStr = date.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: true 
       });
-      return { date: dateStr, time: timeStr };
+      return `Created on: ${dateStr}, ${timeStr}`;
     } catch (e) {
       return null;
     }
   };
 
-  const dateTime = formatDateTime(
+  const dateTimeStr = formatDateTime(
     liveClass.start_time || 
     liveClass.startTime || 
     liveClass.scheduled_at || 
@@ -66,20 +68,9 @@ export const LiveClassCard = ({ liveClass, onWatch }) => {
         </h3>
 
         {/* Date and Time */}
-        {dateTime && (
-          <div className="mb-3 space-y-1">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {dateTime.date}
-            </div>
-            <div className="flex items-center text-xs text-gray-600">
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {dateTime.time}
-            </div>
+        {dateTimeStr && (
+          <div className="mb-3 text-xs text-gray-600">
+            {dateTimeStr}
           </div>
         )}
 
@@ -97,63 +88,36 @@ export const LiveClassCard = ({ liveClass, onWatch }) => {
 
 // Upcoming Class Card with countdown
 export const UpcomingClassCard = ({ upcomingClass }) => {
-  const [timeLeft, setTimeLeft] = useState('');
-
-  // Format date and time
+  // Format date and time - "Created on: 04 Apr 2026, 05:00 PM"
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
     
     try {
       const date = new Date(dateString);
-      const dateStr = date.toLocaleDateString('en-IN', { 
+      if (isNaN(date.getTime())) return null;
+      
+      const dateStr = date.toLocaleDateString('en-GB', { 
         day: '2-digit', 
         month: 'short', 
         year: 'numeric' 
       });
-      const timeStr = date.toLocaleTimeString('en-IN', { 
+      const timeStr = date.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: true 
       });
-      return { date: dateStr, time: timeStr };
+      return `Created on: ${dateStr}, ${timeStr}`;
     } catch (e) {
       return null;
     }
   };
 
-  const dateTime = formatDateTime(
+  const dateTimeStr = formatDateTime(
     upcomingClass.start_time || 
     upcomingClass.startTime || 
-    upcomingClass.scheduled_at
+    upcomingClass.scheduled_at ||
+    upcomingClass.created_at
   );
-
-  useEffect(() => {
-    const calculateTimeLeft = () => {
-      const startTime = new Date(upcomingClass.start_time || upcomingClass.startTime || upcomingClass.scheduled_at);
-      const now = new Date();
-      const diff = startTime - now;
-
-      if (diff <= 0) {
-        setTimeLeft('Starting soon...');
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      
-      if (hours > 24) {
-        const days = Math.floor(hours / 24);
-        setTimeLeft(`Starts in: ${days}d ${hours % 24}h`);
-      } else {
-        setTimeLeft(`Starts in: ${hours}h ${minutes}m`);
-      }
-    };
-
-    calculateTimeLeft();
-    const interval = setInterval(calculateTimeLeft, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, [upcomingClass]);
 
   return (
     <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
@@ -189,26 +153,15 @@ export const UpcomingClassCard = ({ upcomingClass }) => {
         </h3>
 
         {/* Date and Time */}
-        {dateTime && (
-          <div className="mb-3 space-y-1">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {dateTime.date}
-            </div>
-            <div className="flex items-center text-xs text-gray-600">
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {dateTime.time}
-            </div>
+        {dateTimeStr && (
+          <div className="mb-3 text-xs text-gray-600">
+            {dateTimeStr}
           </div>
         )}
 
-        {/* Countdown */}
+        {/* Upcoming Badge */}
         <div className="bg-blue-50 text-blue-700 text-sm font-medium py-2 px-3 rounded text-center">
-          {timeLeft}
+          Upcoming
         </div>
       </div>
     </div>
@@ -217,29 +170,31 @@ export const UpcomingClassCard = ({ upcomingClass }) => {
 
 // Previous Live Class Card
 export const PreviousLiveCard = ({ previousClass, onWatch, loading }) => {
-  // Format date and time
+  // Format date and time - "Created on: 04 Apr 2026, 05:00 PM"
   const formatDateTime = (dateString) => {
     if (!dateString) return null;
     
     try {
       const date = new Date(dateString);
-      const dateStr = date.toLocaleDateString('en-IN', { 
+      if (isNaN(date.getTime())) return null;
+      
+      const dateStr = date.toLocaleDateString('en-GB', { 
         day: '2-digit', 
         month: 'short', 
         year: 'numeric' 
       });
-      const timeStr = date.toLocaleTimeString('en-IN', { 
+      const timeStr = date.toLocaleTimeString('en-US', { 
         hour: '2-digit', 
         minute: '2-digit',
         hour12: true 
       });
-      return { date: dateStr, time: timeStr };
+      return `Created on: ${dateStr}, ${timeStr}`;
     } catch (e) {
       return null;
     }
   };
 
-  const dateTime = formatDateTime(
+  const dateTimeStr = formatDateTime(
     previousClass.start_time || 
     previousClass.startTime || 
     previousClass.created_at ||
@@ -283,30 +238,9 @@ export const PreviousLiveCard = ({ previousClass, onWatch, loading }) => {
         </h3>
 
         {/* Date and Time */}
-        {dateTime && (
-          <div className="mb-3 space-y-1">
-            <div className="flex items-center text-xs text-gray-600">
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {dateTime.date}
-            </div>
-            <div className="flex items-center text-xs text-gray-600">
-              <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {dateTime.time}
-            </div>
-          </div>
-        )}
-
-        {/* Duration if available */}
-        {previousClass.duration && (
-          <div className="flex items-center text-xs text-gray-500 mb-3">
-            <svg className="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {previousClass.duration}
+        {dateTimeStr && (
+          <div className="mb-3 text-xs text-gray-600">
+            {dateTimeStr}
           </div>
         )}
 

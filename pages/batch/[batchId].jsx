@@ -161,51 +161,53 @@ const BatchDetailPage = () => {
       console.log('📄 Opening PDF:', pdf.id);
       
       // Check if file_link exists
-      const encryptedLink = pdf.file_link || pdf.pdf_link || pdf.download_link;
+      let pdfLink = pdf.file_link || pdf.pdf_link || pdf.download_link;
       
-      if (!encryptedLink) {
+      if (!pdfLink) {
         setMessage('😔 Sorry! PDF link not available.');
         setLoadingVideo(null);
         return;
       }
 
-      // Check if link is already decrypted (starts with http)
-      if (encryptedLink.startsWith('http')) {
-        console.log('✅ PDF link already decrypted, opening directly');
-        window.open(encryptedLink, '_blank');
-        setLoadingVideo(null);
-        return;
+      // If link is encrypted (not starting with http), decrypt it first
+      if (!pdfLink.startsWith('http')) {
+        console.log('🔐 PDF link is encrypted, decrypting...');
+        
+        // Call local Next.js API to decrypt
+        const response = await fetch('/api/pdf-decrypt', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            encrypted_link: pdfLink,
+            pdf_id: pdf.id
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to decrypt PDF link');
+        }
+
+        const data = await response.json();
+        
+        if (!data.success || !data.decrypted_url) {
+          throw new Error(data.message || 'No decrypted URL received');
+        }
+
+        pdfLink = data.decrypted_url;
+        console.log('✅ PDF decrypted successfully');
+      } else {
+        console.log('✅ PDF link already decrypted');
       }
 
-      // Link is encrypted, need to decrypt via API
-      console.log('🔐 PDF link is encrypted, decrypting...');
+      // Use proxy to avoid CORS and caching issues
+      const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(pdfLink)}`;
       
-      // Call local Next.js API to decrypt
-      const response = await fetch('/api/pdf-decrypt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          encrypted_link: encryptedLink,
-          pdf_id: pdf.id
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to decrypt PDF link');
-      }
-
-      const data = await response.json();
+      console.log('📄 Opening PDF via proxy...');
       
-      if (!data.success || !data.decrypted_url) {
-        throw new Error(data.message || 'No decrypted URL received');
-      }
-
-      console.log('✅ PDF decrypted successfully, opening...');
-      
-      // Open decrypted PDF in new tab
-      window.open(data.decrypted_url, '_blank');
+      // Open PDF in new tab
+      window.open(proxyUrl, '_blank');
       
     } catch (error) {
       console.error('❌ Error opening PDF:', error);

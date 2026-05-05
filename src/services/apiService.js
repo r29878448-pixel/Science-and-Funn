@@ -1,96 +1,78 @@
 import axios from 'axios';
 import { buildVideoUrl, normalizeUrl, appendQueryParam } from '../utils/urlUtils';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 
 // ============================================
 // CENTRALIZED API CONFIGURATION
-// API URL stored in Firebase for all users
+// API URL fetched from: https://apiserver-all.vercel.app/api/scienceandfun/api-url
+// The returned base URL gets /api/scienceandfun appended automatically
 // ============================================
 
-// API Base URL - loaded from Firebase
+const API_URL_SOURCE = 'https://apiserver-all.vercel.app/api/scienceandfun/api-url';
+const API_PATH_SUFFIX = '/api/scienceandfun';
+
+// API Base URL - loaded from remote endpoint
 let BASE_URL = '';
 
-// Load API URL from Firebase (global config) - with caching
+// Cache
 let apiUrlCache = null;
 let apiUrlCacheTime = 0;
 const API_URL_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-const loadApiUrlFromFirebase = async () => {
+const loadApiUrlFromRemote = async () => {
   try {
     // Return cached value if fresh
     if (apiUrlCache && Date.now() - apiUrlCacheTime < API_URL_CACHE_DURATION) {
       console.log('✅ API Base URL loaded from cache:', apiUrlCache);
       return apiUrlCache;
     }
-    
-    const configDoc = await getDoc(doc(db, 'settings', 'apiConfig'));
-    if (configDoc.exists()) {
-      const data = configDoc.data();
-      BASE_URL = data.baseUrl || '';
-      apiUrlCache = BASE_URL;
-      apiUrlCacheTime = Date.now();
-      console.log('✅ API Base URL loaded from Firebase:', BASE_URL);
-      return BASE_URL;
-    } else {
-      console.warn('⚠️ No API config found in Firebase');
-      return '';
-    }
+
+    const res = await fetch(API_URL_SOURCE);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (!json?.url) throw new Error('No url field in response');
+
+    // Append /api/scienceandfun to the returned base URL
+    const rawUrl = json.url.replace(/\/$/, ''); // strip trailing slash
+    BASE_URL = rawUrl + API_PATH_SUFFIX;
+    apiUrlCache = BASE_URL;
+    apiUrlCacheTime = Date.now();
+    console.log('✅ API Base URL loaded:', BASE_URL);
+    return BASE_URL;
   } catch (error) {
-    console.error('❌ Error loading API URL from Firebase:', error);
-    return apiUrlCache || ''; // Return cached value on error
+    console.error('❌ Error loading API URL:', error);
+    return apiUrlCache || '';
   }
 };
 
 // Initialize on module load (browser only)
 if (typeof window !== 'undefined') {
-  loadApiUrlFromFirebase();
+  loadApiUrlFromRemote();
 }
 
-// Update BASE_URL and persist to Firebase (admin only)
+// Update BASE_URL in memory only (read-only remote source)
 export const updateApiUrl = async (newUrl) => {
   if (!newUrl || typeof newUrl !== 'string') {
     throw new Error('Invalid API URL');
   }
-  
-  // Validate URL format
   try {
     new URL(newUrl);
   } catch (e) {
     throw new Error('Invalid URL format');
   }
-  
   BASE_URL = newUrl.trim();
-  
-  // Save to Firebase (global config for all users)
-  try {
-    await setDoc(doc(db, 'settings', 'apiConfig'), {
-      baseUrl: BASE_URL,
-      updatedAt: new Date().toISOString(),
-      updatedBy: 'admin'
-    });
-    console.log('✅ API Base URL saved to Firebase:', BASE_URL);
-  } catch (error) {
-    console.error('❌ Error saving API URL to Firebase:', error);
-    throw new Error('Failed to save API URL');
-  }
+  console.log('✅ API Base URL updated in memory:', BASE_URL);
 };
 
-// Get current BASE_URL (with instant cache)
+// Get current BASE_URL
 export const getCurrentApiUrl = async () => {
-  // Return immediately if already loaded
-  if (BASE_URL) {
-    return BASE_URL;
-  }
-  
-  // Return cached value if available
+  if (BASE_URL) return BASE_URL;
+
   if (apiUrlCache && Date.now() - apiUrlCacheTime < API_URL_CACHE_DURATION) {
     BASE_URL = apiUrlCache;
     return BASE_URL;
   }
-  
-  // Load from Firebase
-  BASE_URL = await loadApiUrlFromFirebase();
+
+  BASE_URL = await loadApiUrlFromRemote();
   return BASE_URL;
 };
 

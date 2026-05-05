@@ -16,7 +16,7 @@ const TelegramPopup = ({ onClose }) => {
 
   const handleJoinTelegram = () => {
     console.log('📱 User clicked Join Telegram');
-    window.open('https://t.me/missiontopper_freebatches', '_blank');
+    window.open('https://t.me/Study_Portalz', '_blank');
     handleClose();
   };
 
